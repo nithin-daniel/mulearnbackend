@@ -678,13 +678,9 @@ class CircleMeetDetailSerializer(serializers.ModelSerializer):
 
     def get_is_attendee_report_submitted(self, obj):
         user_id = self.context.get("user_id")
-        return (
-            CircleMeetAttendeeReport.objects.select_related(
-                "meet_task__meet", "attendee__user"
-            )
-            .filter(meet_task__meet=obj, attendee__user_id=user_id)
-            .exists()
-        )
+        return CircleMeetAttendees.objects.filter(
+            meet=obj, user_id=user_id, is_report_submitted=True
+        ).exists()
 
     def get_is_report_submitted(self, obj):
         return obj.is_report_submitted
@@ -941,9 +937,11 @@ class CircleMeetBasicDetails(serializers.ModelSerializer):
             .values_list("joined_at", flat=True)
             .first()
         )
-    
+
     def get_report_submitted_attendees(self, obj):
-        return CircleMeetAttendees.objects.filter(meet=obj,is_report_submitted=True).count()
+        return CircleMeetAttendees.objects.filter(
+            meet=obj, is_report_submitted=True
+        ).count()
 
     def get_join_count(self, obj):
         return CircleMeetAttendees.objects.filter(

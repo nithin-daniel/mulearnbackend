@@ -110,6 +110,26 @@ class UserInterestAPI(APIView):
         return CustomResponse(general_message=serializer.errors).get_failure_response()
 
 
+class UnverifiedOrganizationCreateView(APIView):
+    permission_classes = [CustomizePermission]
+
+    def post(self, request):
+        user_id = JWTUtils.fetch_user_id(request)
+        serialized_org = serializers.UnverifiedOrganizationCreateSerializer(
+            data=request.data, context={"user_id": user_id}
+        )
+
+        if not serialized_org.is_valid():
+            return CustomResponse(
+                general_message=serialized_org.errors
+            ).get_failure_response()
+
+        serialized_org.save()
+        return CustomResponse(
+            general_message="Organization Request Submitted."
+        ).get_success_response()
+
+
 class UserRegisterValidateAPI(APIView):
     def put(self, request):
         serialized_user = serializers.RegisterSerializer(data=request.data)

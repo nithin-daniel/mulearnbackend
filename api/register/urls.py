@@ -24,4 +24,8 @@ urlpatterns = [
     path("user-zone/", register_views.UserZoneAPI.as_view()),
     path("interests/", register_views.UserInterestAPI.as_view()),
     path("connect-discord/", register_views.ConnectDiscordAPI.as_view()),
+    path(
+        "organization/create/",
+        register_views.UnverifiedOrganizationCreateView.as_view(),
+    ),
 ]

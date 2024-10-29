@@ -373,28 +373,38 @@ class UserProfilePictureView(APIView):
         return CustomResponse(
             response={"user_id": user.id, "profile_pic": uploaded_file_url}
         ).get_success_response()
-    
-    
+
+
 class UserAddOrgAPI(APIView):
-    def post(self,request):
-        user = User.objects.filter(id=JWTUtils.fetch_user_id(request)).first()
+    def post(self, request):
+        user_id = JWTUtils.fetch_user_id(request)
+        if not (user := cache.get(f"db_user_{user_id}")):
+            user = User.objects.filter(id=user_id).first()
         if user is None:
             return CustomResponse(
                 general_message="No user data available"
             ).get_failure_response()
-        serializer=dash_user_serializer.UserOrgLinkSerializer(data=request.data,context={'user':user})
-        if(serializer.is_valid()):
+        serializer = dash_user_serializer.UserOrgLinkSerializer(
+            data=request.data, context={"user": user}
+        )
+        if serializer.is_valid():
             serializer.save()
-            return CustomResponse(general_message="organisation linked successfully").get_success_response()
+            return CustomResponse(
+                general_message="organisation linked successfully"
+            ).get_success_response()
         return CustomResponse(response=serializer.errors).get_failure_response()
-    def get(self,request):
+
+    def get(self, request):
         user = User.objects.filter(id=JWTUtils.fetch_user_id(request)).first()
         if user is None:
             return CustomResponse(
                 general_message="No user data available"
             ).get_failure_response()
-        
-        links = UserOrganizationLink.objects.filter(user=user,org__org_type=OrganizationType.COLLEGE.value).select_related('org','department')
-        serializer=dash_user_serializer.GetUserLinkSerializer(instance=links,many=True)
+
+        links = UserOrganizationLink.objects.filter(
+            user=user, org__org_type=OrganizationType.COLLEGE.value
+        ).select_related("org", "department")
+        serializer = dash_user_serializer.GetUserLinkSerializer(
+            instance=links, many=True
+        )
         return CustomResponse(response=serializer.data).get_success_response()
-        

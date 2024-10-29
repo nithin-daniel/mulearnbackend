@@ -11,6 +11,7 @@ from db.organization import (
     District,
     Organization,
     State,
+    UnverifiedOrganization,
     UserOrganizationLink,
     Zone,
 )
@@ -270,6 +271,21 @@ class IntegrationSerializer(serializers.Serializer):
 
         send_data_to_kkem(kkem_link)
         return kkem_link
+
+
+class UnverifiedOrganizationCreateSerializer(serializers.ModelSerializer):
+    def create(self, validated_data):
+        validated_data["created_by_id"] = self.context.get("user_id")
+        return UnverifiedOrganization.objects.create(**validated_data)
+
+    def validate_org_type(self, org_type):
+        if org_type not in OrganizationType.get_all_values():
+            raise serializers.ValidationError("Invalid organization type")
+        return org_type
+
+    class Meta:
+        model = UnverifiedOrganization
+        fields = ["title", "org_type"]
 
 
 class UserSerializer(serializers.ModelSerializer):

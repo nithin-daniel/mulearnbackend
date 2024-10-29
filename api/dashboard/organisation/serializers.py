@@ -472,3 +472,12 @@ class OrganizationVerifySerializer(serializers.ModelSerializer):
     class Meta:
         model = UnverifiedOrganization
         fields = ["verified", "org_id"]
+
+
+class UnverifiedOrganizationsSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(read_only=True)
+    created_by = serializers.CharField(source="created_by.full_name", read_only=True)
+
+    class Meta:
+        model = UnverifiedOrganization
+        fields = ["id", "title", "org_type", "created_by", "created_at"]

@@ -32,6 +32,7 @@ from .serializers import (
     OrganizationKarmaLogGetPostPatchDeleteSerializer,
     OrganizationImportSerializer,
     OrganizationVerifySerializer,
+    UnverifiedOrganizationsSerializer,
 )
 
 
@@ -721,6 +722,15 @@ class TransferAPI(APIView):
         return CustomResponse(
             response={"Organisations transferred successfully"}
         ).get_success_response()
+
+
+class UnverifiedOrganizationsListAPI(APIView):
+    permission_classes = [CustomizePermission]
+
+    def get(self, request):
+        unverified_orgs = UnverifiedOrganization.objects.filter(verified__isnull=True)
+        seializer = UnverifiedOrganizationsSerializer(unverified_orgs, many=True)
+        return CustomResponse(response=seializer.data).get_success_response()
 
 
 class VerifyOrganizationAPI(APIView):

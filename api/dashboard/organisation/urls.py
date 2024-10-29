@@ -74,5 +74,6 @@ urlpatterns = [
     path("base-template/", organisation_views.OrganisationBaseTemplateAPI.as_view()),
     path("import/", organisation_views.OrganisationImportAPI.as_view()),
     path("transfer/", organisation_views.TransferAPI.as_view()),
+    path("verify/list/", organisation_views.UnverifiedOrganizationsListAPI.as_view()),
     path("verify/<str:uorg_id>/", organisation_views.VerifyOrganizationAPI.as_view()),
 ]

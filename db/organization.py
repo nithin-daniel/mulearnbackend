@@ -224,6 +224,8 @@ class UnverifiedOrganization(models.Model):
     id = models.CharField(primary_key=True, max_length=36, default=lambda:str(uuid.uuid4()))
     title = models.CharField(max_length=100)
     org_type = models.CharField(max_length=25)
+    graduation_year = models.IntegerField(blank=True, null=True)
+    department = models.ForeignKey(Department, models.DO_NOTHING, related_name='unverified_organizations_dept', null=True)
     verified = models.BooleanField(null=True)
     verified_by = models.ForeignKey(User, models.DO_NOTHING, db_column='verified_by', related_name='unverified_organizations_verified_by', null=True)
     verified_at = models.DateTimeField(null=True)

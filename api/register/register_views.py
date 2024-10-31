@@ -231,7 +231,7 @@ class RegisterDataAPI(APIView):
             return CustomResponse(message=create_user.errors).get_failure_response()
 
         user = create_user.save()
-        cache.set(f"db_user_{user.muid}", user, timeout=20)
+        cache.set(f"db_user_{user.muid}", user, timeout=60)
         password = request.data["user"]["password"]
         cache.set(f"flag_register_{user.muid}", True, timeout=5)
         res_data = get_auth_token(user.muid, password)

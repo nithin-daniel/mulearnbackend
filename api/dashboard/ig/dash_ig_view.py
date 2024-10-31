@@ -11,6 +11,8 @@ from .dash_ig_serializer import (
     InterestGroupSerializer,
     InterestGroupCreateUpdateSerializer,
 )
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from api.dashboard.roles.dash_roles_serializer import RoleDashboardSerializer
 from db.user import Role
 
@@ -260,6 +262,7 @@ class InterestGroupGetAPI(APIView):
 
 
 class InterestGroupListApi(APIView):
+    @method_decorator(cache_page(60 * 10))
     def get(self, request):
         ig = (
             InterestGroup.objects.all()

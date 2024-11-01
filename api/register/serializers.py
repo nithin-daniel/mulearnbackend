@@ -274,6 +274,11 @@ class IntegrationSerializer(serializers.Serializer):
 
 
 class UnverifiedOrganizationCreateSerializer(serializers.ModelSerializer):
+    graduation_year = serializers.IntegerField(required=False, allow_null=True)
+    department = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(), required=False, allow_null=True
+    )
+
     def create(self, validated_data):
         validated_data["created_by_id"] = self.context.get("user_id")
         return UnverifiedOrganization.objects.create(**validated_data)
@@ -285,7 +290,7 @@ class UnverifiedOrganizationCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UnverifiedOrganization
-        fields = ["title", "org_type"]
+        fields = ["title", "org_type", "graduation_year", "department"]
 
 
 class UserSerializer(serializers.ModelSerializer):

@@ -27,7 +27,7 @@ class UserInfoAPI(APIView):
         # user = cache.get(f"db_user_{user_muid}")
         # if not user:
         user = User.objects.filter(muid=user_muid).first()
-        cache.set(f"db_user_{user_muid}", user, timeout=10)
+        cache.set(f"db_user_{user_muid}", user, timeout=60)
         if user is None:
             return CustomResponse(
                 general_message="No user data available"

@@ -728,7 +728,11 @@ class UnverifiedOrganizationsListAPI(APIView):
     permission_classes = [CustomizePermission]
 
     def get(self, request):
-        unverified_orgs = UnverifiedOrganization.objects.filter(verified__isnull=True)
+        unverified_orgs = (
+            UnverifiedOrganization.objects.select_related("created_by", "department")
+            .filter(verified__isnull=True)
+            .order_by("-created_at")
+        )
         seializer = UnverifiedOrganizationsSerializer(unverified_orgs, many=True)
         return CustomResponse(response=seializer.data).get_success_response()
 

@@ -460,10 +460,11 @@ class OrganizationVerifySerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     "Unable to assign organization to user"
                 )
-            print(validated_data.get("org_id"))
             UserOrganizationLink.objects.create(
                 user_id=instance.created_by_id,
                 org=validated_data.get("org_id"),
+                department_id=instance.department_id,
+                graduation_year=instance.graduation_year,
                 verified=True,
                 created_by_id=instance.verified_by_id,
             )
@@ -477,7 +478,16 @@ class OrganizationVerifySerializer(serializers.ModelSerializer):
 class UnverifiedOrganizationsSerializer(serializers.ModelSerializer):
     id = serializers.CharField(read_only=True)
     created_by = serializers.CharField(source="created_by.full_name", read_only=True)
+    department = serializers.CharField(source="department.title", read_only=True)
 
     class Meta:
         model = UnverifiedOrganization
-        fields = ["id", "title", "org_type", "created_by", "created_at"]
+        fields = [
+            "id",
+            "title",
+            "org_type",
+            "graduation_year",
+            "department",
+            "created_by",
+            "created_at",
+        ]

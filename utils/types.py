@@ -174,6 +174,15 @@ class TFPTasksHashtags(Enum):
         return [member.value for member in cls]
 
 
+class LearningCircleRecurrenceType(Enum):
+    WEEKLY = "weekly"
+    MONTHLY = "monthly"
+
+    @classmethod
+    def get_all_values(cls):
+        return [member.value for member in cls]
+
+
 DEFAULT_HACKATHON_FORM_FIELDS = {
     "name": "system",
     "gender": "system",

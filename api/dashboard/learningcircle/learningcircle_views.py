@@ -19,7 +19,20 @@ from django.db.models import Q
 class LearningCircleView(APIView):
     permission_classes = [CustomizePermission]
 
-    def get(self, request):
+    def get(self, request, circle_id: str = None):
+        if circle_id:
+            learning_circle = LearningCircle.objects.get(id=circle_id)
+            circle_meetings = CircleMeetingLog.objects.filter(
+                circle_id=learning_circle, is_report_submitted=True
+            )
+            serializer = LearningCircleListSerializer(learning_circle)
+            meetings_serializer = CircleMeetingLogListSerializer(
+                circle_meetings, many=True
+            )
+            return CustomResponse(
+                general_message="Learning Circle fetched successfully",
+                response={**serializer.data, "past_meetups": meetings_serializer.data},
+            ).get_success_response()
         learning_circles = (
             LearningCircle.objects.filter(created_by_id=JWTUtils.fetch_user_id(request))
             .order_by("-created_at", "-updated_at")
@@ -41,9 +54,10 @@ class LearningCircleView(APIView):
                 general_message="Learning Circle creation failed",
                 response=serializer.errors,
             ).get_failure_response()
-        serializer.save()
+        result = serializer.save()
         return CustomResponse(
-            general_message="Learning Circle created successfully"
+            general_message="Learning Circle created successfully",
+            response={"circle_id": result.id},
         ).get_success_response()
 
     def put(self, request, circle_id: str):

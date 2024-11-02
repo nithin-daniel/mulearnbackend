@@ -5,6 +5,7 @@ from . import learningcircle_views
 urlpatterns = [
     path("create/", learningcircle_views.LearningCircleView.as_view()),
     path("list/", learningcircle_views.LearningCircleView.as_view()),
+    path("info/<str:circle_id>/", learningcircle_views.LearningCircleView.as_view()),
     path("edit/<str:circle_id>/", learningcircle_views.LearningCircleView.as_view()),
     path("delete/<str:circle_id>/", learningcircle_views.LearningCircleView.as_view()),
     path("meeting/create/", learningcircle_views.LearningCircleMeetingView.as_view()),

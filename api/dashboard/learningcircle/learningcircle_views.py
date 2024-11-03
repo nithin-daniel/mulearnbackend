@@ -3,9 +3,11 @@ import requests
 from rest_framework.views import APIView
 from db.learning_circle import LearningCircle, CircleMeetingLog, CircleMeetingAttendees
 from db.user import UserInterests
+from utils.karma import add_karma
 from utils.permission import CustomizePermission, JWTUtils
 from utils.response import CustomResponse
-from utils.utils import generate_code
+from utils.types import Lc
+from utils.utils import DateTimeUtils, generate_code
 from .learningcircle_serializer import (
     CircleMeetingLogCreateEditSerializer,
     CircleMeetingLogListSerializer,
@@ -55,6 +57,9 @@ class LearningCircleView(APIView):
                 response=serializer.errors,
             ).get_failure_response()
         result = serializer.save()
+        add_karma(
+            user_id, Lc.MEET_CREATE_HASHTAG.value, user_id, Lc.MEET_CREATE_KARMA.value
+        )
         return CustomResponse(
             general_message="Learning Circle created successfully",
             response={"circle_id": result.id},
@@ -168,10 +173,12 @@ class LearningCircleJoinAPI(APIView):
     def post(self, request, meet_id: str):
         user_id = JWTUtils.fetch_user_id(request)
         circle_meeting = CircleMeetingLog.objects.get(id=meet_id)
-        is_meet_started = circle_meeting.meet_time <= datetime.now(timezone.utc)
+        is_meet_started = (
+            circle_meeting.meet_time <= DateTimeUtils.get_current_utc_time()
+        )
         is_meet_ended = (
             circle_meeting.meet_time + timedelta(hours=circle_meeting.duration + 2)
-        ) <= datetime.now(timezone.utc)
+        ) <= DateTimeUtils.get_current_utc_time()
         if is_meet_ended:
             return CustomResponse(
                 general_message="The Circle Meeting has already ended"
@@ -185,7 +192,7 @@ class LearningCircleJoinAPI(APIView):
                     general_message="Invalid Circle Meeting code"
                 ).get_failure_response()
             is_joined = True
-            joined_at = datetime.now(timezone.utc)
+            joined_at = DateTimeUtils.get_current_utc_time()
         attendee = CircleMeetingAttendees.objects.filter(
             meet_id=circle_meeting, user_id_id=user_id
         ).first()
@@ -201,6 +208,9 @@ class LearningCircleJoinAPI(APIView):
             attendee.is_joined = is_joined
             attendee.joined_at = joined_at
             attendee.save()
+            add_karma(
+                user_id, Lc.MEET_JOIN_HASHTAG.value, user_id, Lc.MEET_JOIN_KARMA.value
+            )
             return CustomResponse(
                 general_message="You have successfully joined the Circle Meeting"
             ).get_success_response()
@@ -209,6 +219,9 @@ class LearningCircleJoinAPI(APIView):
             user_id_id=user_id,
             is_joined=is_joined,
             joined_at=joined_at,
+        )
+        add_karma(
+            user_id, Lc.MEET_JOIN_HASHTAG.value, user_id, Lc.MEET_JOIN_KARMA.value
         )
         return CustomResponse(
             general_message=(
@@ -285,6 +298,12 @@ class LearningCircleAttendeeReportAPI(APIView):
         attendee.report_text = report
         attendee.report_link = report_link
         attendee.save()
+        add_karma(
+            user_id,
+            Lc.ATTENDEE_REPORT_SUBMIT_HASHTAG.value,
+            user_id,
+            Lc.ATTENDEE_REPORT_SUBMIT_KARMA.value,
+        )
         return CustomResponse(
             general_message="You have successfully submitted the report"
         ).get_success_response()
@@ -366,6 +385,7 @@ class LearningCircleReportAPI(APIView):
             return CustomResponse(
                 general_message="Please provide the report"
             ).get_failure_response()
+        karma_user_ids = []
         for attendee_id, approved in attendees.items():
             attendee = CircleMeetingAttendees.objects.filter(
                 meet_id=circle_meeting, user_id_id=attendee_id
@@ -380,9 +400,17 @@ class LearningCircleReportAPI(APIView):
                 ).get_failure_response()
             attendee.is_lc_approved = approved
             attendee.save()
+            if attendee.is_lc_approved:
+                karma_user_ids.append(attendee_id)
         circle_meeting.is_report_submitted = True
         circle_meeting.report_text = report
         circle_meeting.save()
+        add_karma(
+            karma_user_ids,
+            Lc.LC_REPORT_HASHTAG.value,
+            user_id,
+            Lc.LC_REPORT_KARMA.value,
+        )
         return CustomResponse(
             general_message="The report has been submitted successfully"
         ).get_success_response()
@@ -447,7 +475,10 @@ class LearningCircleMeetingListAPI(APIView):
         )
         meetings = (
             CircleMeetingLog.objects.filter(
-                Q(meet_time__gte=datetime.now(timezone.utc) - timedelta(hours=2))
+                Q(
+                    meet_time__gte=DateTimeUtils.get_current_utc_time()
+                    - timedelta(hours=2)
+                )
                 | Q(id__in=user_meetups)
             ).order_by("meet_time")
             # .prefetch_related("circle_meeting_attendance_meet_id")

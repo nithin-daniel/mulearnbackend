@@ -1,10 +1,13 @@
 from datetime import datetime, timedelta, timezone
+
+import pytz
 from db.learning_circle import LearningCircle, CircleMeetingLog, CircleMeetingAttendees
 from rest_framework import serializers
 
 from db.organization import Organization
 from db.task import InterestGroup
 from utils.types import LearningCircleRecurrenceType
+from utils.utils import DateTimeUtils
 
 
 class LearningCircleCreateEditSerialzier(serializers.ModelSerializer):
@@ -25,7 +28,7 @@ class LearningCircleCreateEditSerialzier(serializers.ModelSerializer):
             "recurrence_type", instance.recurrence_type
         )
         instance.recurrence = validated_data.get("recurrence", instance.recurrence)
-        instance.updated_at = datetime.now(timezone.utc)
+        instance.updated_at = DateTimeUtils.get_current_utc_time()
         instance.save()
         return instance
 
@@ -66,8 +69,8 @@ class LearningCircleCreateEditSerialzier(serializers.ModelSerializer):
 
 
 class LearningCircleListSerializer(serializers.ModelSerializer):
-    ig = serializers.CharField(source="ig_id.name", read_only=True)
-    org = serializers.CharField(source="org_id.name", read_only=True, allow_null=True)
+    ig = serializers.CharField(source="ig.name", read_only=True)
+    org = serializers.CharField(source="org.name", read_only=True, allow_null=True)
     created_by = serializers.CharField(source="created_by_id.full_name", read_only=True)
     next_meetup = serializers.SerializerMethodField()
 
@@ -95,18 +98,17 @@ class LearningCircleListSerializer(serializers.ModelSerializer):
     def get_next_meetup(self, obj):
         next_meetup = (
             CircleMeetingLog.objects.filter(circle_id=obj.id)
-            .filter(meet_time__gte=datetime.now(timezone.utc))
+            .filter(
+                meet_time__gte=DateTimeUtils.get_current_utc_time(),
+                is_report_submitted=False,
+            )
             .order_by("-meet_time")
             .first()
         )
         if next_meetup:
             return {
+                **CircleMeetingLogListSerializer(next_meetup).data,
                 "is_scheduled": True,
-                "id": next_meetup.id,
-                "title": next_meetup.title,
-                "meet_time": next_meetup.meet_time,
-                "meet_place": next_meetup.meet_place,
-                "is_report_submitted": next_meetup.is_report_submitted,
             }
         if not obj.is_recurring:
             return None
@@ -154,7 +156,7 @@ class CircleMeetingLogCreateEditSerializer(serializers.ModelSerializer):
         instance.meet_place = validated_data.get("meet_place", instance.meet_place)
         instance.meet_time = validated_data.get("meet_time", instance.meet_time)
         instance.duration = validated_data.get("duration", instance.duration)
-        instance.updated_at = datetime.now(timezone.utc)
+        instance.updated_at = DateTimeUtils.get_current_utc_time()
         instance.save()
         return instance
 
@@ -210,7 +212,7 @@ class CircleMeetingLogListSerializer(serializers.ModelSerializer):
     is_ended = serializers.SerializerMethodField()
 
     def get_is_started(self, obj):
-        return obj.meet_time <= datetime.now(timezone.utc)
+        return obj.meet_time <= DateTimeUtils.get_current_utc_time()
 
     def get_is_ended(self, obj):
         return (obj.meet_time + timedelta(hours=obj.duration + 1)) <= datetime.now(
@@ -259,7 +261,7 @@ class CircleMeetupInfoSerializer(serializers.ModelSerializer):
     attendee = serializers.SerializerMethodField()
 
     def get_is_started(self, obj):
-        return obj.meet_time <= datetime.now(timezone.utc)
+        return obj.meet_time <= DateTimeUtils.get_current_utc_time()
 
     def get_is_ended(self, obj):
         return (obj.meet_time + timedelta(hours=obj.duration + 1)) <= datetime.now(

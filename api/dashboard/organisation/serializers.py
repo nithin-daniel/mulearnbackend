@@ -21,6 +21,7 @@ from db.organization import (
 )
 from utils.permission import JWTUtils
 from utils.types import OrganizationType
+from utils.utils import DateTimeUtils
 
 
 class InstitutionSerializer(serializers.ModelSerializer):
@@ -451,7 +452,7 @@ class OrganizationVerifySerializer(serializers.ModelSerializer):
         instance.verified = validated_data.get("verified")
         instance.org = validated_data.get("org_id")
         instance.verified_by_id = self.context.get("user_id")
-        instance.verified_at = datetime.now(timezone.utc)
+        instance.verified_at = DateTimeUtils.get_current_utc_time()
         instance.save()
         if instance.verified:
             if UserOrganizationLink.objects.filter(

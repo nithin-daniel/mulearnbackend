@@ -101,6 +101,16 @@ class LearningCircleView(APIView):
         ).get_success_response()
 
 
+class LearningCircleMeetingInfoAPI(APIView):
+    def get(self, request, meet_id: str):
+        meet = CircleMeetingLog.objects.get(id=meet_id)
+        serializer = CircleMeetingLogListSerializer(meet)
+        return CustomResponse(
+            general_message="Meeting fetched successfully",
+            response=serializer.data,
+        ).get_success_response()
+
+
 class LearningCircleMeetingView(APIView):
     permission_classes = [CustomizePermission]
 
@@ -247,7 +257,11 @@ class LearningCircleJoinAPI(APIView):
             ).get_failure_response()
         attendee.delete()
         return CustomResponse(
-            general_message="You have successfully left the Circle Meeting"
+            general_message=(
+                "You have successfully left the Circle Meeting"
+                if attendee.is_joined
+                else "Removed from saved list."
+            )
         ).get_success_response()
 
 
@@ -448,16 +462,34 @@ class LearningCircleMeetingListAPI(APIView):
 
     def get(self, request):
         request_data = request.query_params
-        categories = request_data.get("categories", [])
+        category = request_data.get("category", None)
+        saved = request_data.get("saved", "0")
+        participated = request_data.get("participated", "0")
+        saved = str(saved).lower() in ("true", "1")
+        participated = str(participated).lower() in ("true", "1")
         # no_location = request_data.get("no_location")
         lat = request_data.get("lat")
         lon = request_data.get("lon")
         user_id = None
-        if JWTUtils.is_jwt_authenticated(request) and not categories:
+        if JWTUtils.is_jwt_authenticated(request):
+            user_id = JWTUtils.fetch_user_id(request)
+        if saved or participated:
+            if not user_id:
+                return CustomResponse(
+                    general_message="User not authenticated"
+                ).get_failure_response()
+            category = "all"
+        if saved and participated:
+            return CustomResponse(
+                general_message="Please provide either saved or participated"
+            ).get_failure_response()
+        if user_id and not category and category != "all":
             user_id = JWTUtils.fetch_user_id(request)
             interests = UserInterests.objects.filter(user_id=user_id).first()
             if interests:
-                categories = interests.choosen_interests
+                category = interests.choosen_interests
+        if category != "all" and type(category) == str:
+            category = [category]
         # if not no_location and not lat and not lon:
         #     user_ip = request.META.get("REMOTE_ADDR")
         #     ipinfo_api_url = f"http://ip-api.com/json/{user_ip}?fields=status,lat,lon"
@@ -466,28 +498,33 @@ class LearningCircleMeetingListAPI(APIView):
         #     if location_data.get("status") == "success":
         #         lat = location_data.get("lat")
         #         lon = location_data.get("lon")
+        if saved:
+            filter = Q(user_id=user_id, is_joined=False)
+        elif participated:
+            filter = Q(user_id=user_id, is_joined=True)
+        else:
+            filter = Q(user_id=user_id, is_report_submitted=False)
         user_meetups = (
             []
             if not user_id
-            else CircleMeetingAttendees.objects.filter(
-                user_id=user_id, is_report_submitted=False
-            ).values_list("meet_id_id", flat=True)
+            else CircleMeetingAttendees.objects.filter(filter).values_list(
+                "meet_id_id", flat=True
+            )
         )
+        if saved or participated:
+            filter = Q(id__in=user_meetups)
+        else:
+            filter = Q(
+                meet_time__gte=DateTimeUtils.get_current_utc_time() - timedelta(hours=2)
+            ) | Q(id__in=user_meetups)
         meetings = (
-            CircleMeetingLog.objects.filter(
-                Q(
-                    meet_time__gte=DateTimeUtils.get_current_utc_time()
-                    - timedelta(hours=2)
-                )
-                | Q(id__in=user_meetups)
-            ).order_by("meet_time")
+            CircleMeetingLog.objects.filter(filter).order_by("meet_time")
             # .prefetch_related("circle_meeting_attendance_meet_id")
         )
-        if categories and type(categories) == list:
+        if category and category != "all" and type(category) == list:
             meetings = meetings.select_related("circle_id__ig").filter(
-                circle_id__ig__category__in=categories
+                circle_id__ig__category__in=category
             )
-
         serializer = CircleMeetupInfoSerializer(
             meetings, many=True, context={"user_id": user_id}
         )

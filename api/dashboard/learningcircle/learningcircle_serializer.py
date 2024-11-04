@@ -99,7 +99,7 @@ class LearningCircleListSerializer(serializers.ModelSerializer):
         next_meetup = (
             CircleMeetingLog.objects.filter(circle_id=obj.id)
             .filter(
-                meet_time__gte=DateTimeUtils.get_current_utc_time(),
+                # meet_time__gte=DateTimeUtils.get_current_utc_time(),
                 is_report_submitted=False,
             )
             .order_by("-meet_time")
@@ -241,6 +241,7 @@ class CircleMeetingLogListSerializer(serializers.ModelSerializer):
 
 
 class CircleMeetingAttendeeSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = CircleMeetingAttendees
         fields = ["is_joined", "is_report_submitted", "is_lc_approved"]
@@ -270,10 +271,13 @@ class CircleMeetupInfoSerializer(serializers.ModelSerializer):
 
     def get_attendee(self, obj):
         if user_id := self.context.get("user_id"):
+            user_obj = obj.circle_meeting_attendance_meet_id.filter(
+                user_id=user_id
+            ).first()
+            if not user_obj:
+                return None
             return CircleMeetingAttendeeSerializer(
-                obj.circle_meeting_attendance_meet_id.filter(
-                    user_id_id=user_id
-                ).first(),
+                user_obj,
                 many=False,
             ).data
         return None

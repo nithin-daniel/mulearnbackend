@@ -19,6 +19,10 @@ urlpatterns = [
         learningcircle_views.LearningCircleMeetingView.as_view(),
     ),
     path(
+        "meeting/info/<str:meet_id>/",
+        learningcircle_views.LearningCircleMeetingInfoAPI.as_view(),
+    ),
+    path(
         "meeting/delete/<str:meet_id>/",
         learningcircle_views.LearningCircleMeetingView.as_view(),
     ),

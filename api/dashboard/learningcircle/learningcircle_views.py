@@ -361,7 +361,7 @@ class LearningCircleReportAPI(APIView):
             ).get_failure_response()
         attendees = CircleMeetingAttendees.objects.filter(
             meet_id=circle_meeting, is_joined=True
-        )
+        ).select_related("user_id")
         return CustomResponse(
             general_message="Report fetched successfully",
             response={
@@ -369,6 +369,8 @@ class LearningCircleReportAPI(APIView):
                 "report": circle_meeting.report_text,
                 "attendees": {
                     attendee.user_id_id: {
+                        "full_name": attendee.user_id.full_name,
+                        "muid": attendee.user_id.muid,
                         "is_lc_approved": attendee.is_lc_approved,
                         "report": attendee.report_text,
                         "report_link": attendee.report_link,

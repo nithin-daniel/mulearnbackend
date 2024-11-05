@@ -103,8 +103,11 @@ class LearningCircleView(APIView):
 
 class LearningCircleMeetingInfoAPI(APIView):
     def get(self, request, meet_id: str):
+        user_id = None
+        if JWTUtils.is_jwt_authenticated(request):
+            user_id = JWTUtils.fetch_user_id(request)
         meet = CircleMeetingLog.objects.get(id=meet_id)
-        serializer = CircleMeetingLogListSerializer(meet)
+        serializer = CircleMeetupInfoSerializer(meet, context={"user_id": user_id})
         return CustomResponse(
             general_message="Meeting fetched successfully",
             response=serializer.data,
@@ -367,8 +370,9 @@ class LearningCircleReportAPI(APIView):
             response={
                 "is_report_submitted": circle_meeting.is_report_submitted,
                 "report": circle_meeting.report_text,
-                "attendees": {
-                    attendee.user_id_id: {
+                "attendees": [
+                    {
+                        "user_id": attendee.user_id_id,
                         "full_name": attendee.user_id.full_name,
                         "muid": attendee.user_id.muid,
                         "is_lc_approved": attendee.is_lc_approved,
@@ -376,7 +380,7 @@ class LearningCircleReportAPI(APIView):
                         "report_link": attendee.report_link,
                     }
                     for attendee in attendees
-                },
+                ],
             },
         ).get_success_response()
 

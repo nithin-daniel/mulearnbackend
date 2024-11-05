@@ -19,9 +19,9 @@ def get_recurring_lc_ids():
 
 def migrate_to_new_lc():
     lcs = get_recurring_lc_ids()
+    execute("DROP TABLE IF EXISTS circle_meet_attendee_report;")
     execute("DROP TABLE IF EXISTS circle_meet_attendees;")
     execute("DROP TABLE IF EXISTS circle_meet_tasks;")
-    execute("DROP TABLE IF EXISTS circle_meet_attendee_report;")
     execute("DROP TABLE IF EXISTS circle_meeting_log;")
     execute(
         """

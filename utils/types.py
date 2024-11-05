@@ -125,12 +125,21 @@ class Events(Enum):
 class Lc(Enum):
     RECORD_SUBMIT_KARMA = 20
     RECORD_SUBMIT_HASHTAG = "#lcmeetreport"
-
-    MEET_JOIN_KARMA = 10
-    MEET_JOIN_HASHTAG = "#lcmeetjoin"
-
+    # Karma for creating a learning circle
+    MEET_CREATE_KARMA = 1
+    MEET_CREATE_HASHTAG = "#lc-meet-create"
+    # Karma for joining a learning circle
+    MEET_JOIN_KARMA = 1
+    MEET_JOIN_HASHTAG = "#lc-meet-join"
+    # Karma for submitting an attendee report
+    ATTENDEE_REPORT_SUBMIT_KARMA = 2
+    ATTENDEE_REPORT_SUBMIT_HASHTAG = "#lc-attendee-report"
+    # Karma for submitting a learning circle report
+    LC_REPORT_KARMA = 5
+    LC_REPORT_HASHTAG = "#lc-meet-report"
+    # karma when appraiser approved
     VERIFY_MAX_KARMA = 200
-    VERIFY_HASHTAG = "#lcmeetverify"
+    VERIFY_HASHTAG = "#lc-meet-verify"
 
 
 class CouponResponseKey(Enum):
@@ -168,6 +177,15 @@ class TFPTasksHashtags(Enum):
     SCRATCH = "#tfp2.0-scratch"
     COMMAND_LINE = "#tfp2.0-command-line"
     GIT_GITHUB = "#tfp2.0-git-github"
+
+    @classmethod
+    def get_all_values(cls):
+        return [member.value for member in cls]
+
+
+class LearningCircleRecurrenceType(Enum):
+    WEEKLY = "weekly"
+    MONTHLY = "monthly"
 
     @classmethod
     def get_all_values(cls):
